@@ -8,6 +8,12 @@ Every week of the last year is a building. The more you committed that week, the
 
 It is one animated SVG, rebuilt every day by a GitHub Action, that you show in your profile README like any image.
 
+## Seasons
+
+Through December the city gets snow on its roofs and in the air, and from 26 December to 7 January the sky fills with fireworks for the new year. It happens by itself (`theme: auto`), or you can hold one.
+
+![The city at night, in the snow, and on New Year's Eve](docs/demo.gif)
+
 ## Put it on your profile
 
 1. In your profile repository (the one named after you), add `.github/workflows/commit-city.yml`:
@@ -52,6 +58,7 @@ It is one animated SVG, rebuilt every day by a GitHub Action, that you show in y
 | `github_user_name` | (required) | Whose contributions to build from |
 | `github_token` | `${{ github.token }}` | The workflow's own token reads public contributions. To count private ones too, pass a personal token with `read:user` |
 | `outputs` | `dist/city.svg` | Where to write the SVG, one path per line |
+| `theme` | `auto` | `auto` (snow in December, fireworks round New Year), `night`, `snow` or `newyear` |
 
 ## Run it yourself
 
@@ -59,7 +66,7 @@ No dependencies, just Node 20 or newer:
 
 ```sh
 gh api graphql -f query='query($login:String!){user(login:$login){contributionsCollection{contributionCalendar{totalContributions weeks{contributionDays{contributionCount date weekday}}}}}}' -F login=YOUR-NAME > data.json
-node scripts/build.mjs data.json city.svg YOUR-NAME
+node scripts/build.mjs data.json city.svg YOUR-NAME   # add snow or newyear to try a season
 ```
 
 `node scripts/sample.mjs sample.json 150` makes up a quieter year to try it on.

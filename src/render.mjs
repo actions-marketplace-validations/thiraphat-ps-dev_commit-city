@@ -50,7 +50,57 @@ function moon(cx, cy, r, phase, lit, dark) {
  * calendar: GitHub's contributionCalendar ({ totalContributions, weeks: [{ contributionDays }] }).
  * opts: { login, date } (date decides the moon).
  */
-export function renderCity(calendar, { login = '', date = new Date() } = {}) {
+/**
+ * Which seasonal touches to draw. theme: 'auto' (by date), 'night' (none), 'snow', or 'newyear'
+ * (fireworks, with snow). Auto: snow from 1 December to 10 January, fireworks 26 December to 7 January.
+ */
+export function seasonFor(theme, date) {
+  if (theme === 'night') return { snow: false, fireworks: false };
+  if (theme === 'snow') return { snow: true, fireworks: false };
+  if (theme === 'newyear') return { snow: true, fireworks: true };
+  const m = date.getMonth();
+  const d = date.getDate();
+  return {
+    snow: m === 11 || (m === 0 && d <= 10),
+    fireworks: (m === 11 && d >= 26) || (m === 0 && d <= 7),
+  };
+}
+
+/** The year the fireworks are for: the coming one from July on, this one in early January. */
+const newYear = (date) => date.getFullYear() + (date.getMonth() >= 6 ? 1 : 0);
+
+const FW = ['#ff5a6a', '#ffd24a', '#6ad8ff', '#9dff7a', '#ff8ad8', '#ffffff', '#ffb04a', '#b58cff'];
+
+/** Fireworks: rockets climb, burst into sparks that fall and fade, each on its own loop. */
+function fireworks(add, date) {
+  const shows = 9;
+  for (let b = 0; b < shows; b++) {
+    const cx = 40 + Math.floor(hash(b, 41) * (W - 80));
+    const cy = 22 + Math.floor(hash(b, 42) * 34);
+    const col = FW[Math.floor(hash(b, 43) * FW.length)];
+    const col2 = FW[Math.floor(hash(b, 44) * FW.length)];
+    const period = (5 + hash(b, 45) * 3).toFixed(2);
+    const delay = (-hash(b, 46) * 8).toFixed(2);
+    const timing = `animation-duration:${period}s;animation-delay:${delay}s`;
+    // the rocket going up
+    add(`<rect class="rk" x="${cx}" y="${GROUND - 8}" width="1" height="3" fill="#fff2d0" style="${timing};--up:${cy - (GROUND - 8)}px"/>`);
+    // the flash at the core, then the sparks
+    add(`<rect class="cr" x="${cx - 1}" y="${cy - 1}" width="3" height="3" fill="#ffffff" style="${timing}"/>`);
+    const n = 44;
+    const r = 16 + hash(b, 47) * 12;
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2 + hash(b, k, 48) * 0.3;
+      const reach = r * (0.45 + hash(b, k, 49) * 0.55); // a full, filled burst, not a hollow ring
+      const dx = Math.round(Math.cos(a) * reach);
+      const dy = Math.round(Math.sin(a) * reach + 6); // they sag as they fall
+      const big = k % 3 === 0 ? 2 : 1;
+      add(`<rect class="sp" x="${cx}" y="${cy}" width="${big}" height="${big}" fill="${k % 2 ? col2 : col}" style="${timing};--dx:${dx}px;--dy:${dy}px"/>`);
+    }
+  }
+}
+
+export function renderCity(calendar, { login = '', date = new Date(), theme = 'auto' } = {}) {
+  const season = seasonFor(theme, date);
   const weeks = calendar.weeks.map((w) => {
     const days = w.contributionDays.map((d) => d.contributionCount);
     return { total: days.reduce((a, b) => a + b, 0), active: days.filter((n) => n > 0).length };
@@ -84,6 +134,8 @@ export function renderCity(calendar, { login = '', date = new Date() } = {}) {
   add(`<g opacity="${(0.1).toFixed(2)}">${halo.join('')}</g>`);
   add(moon(W - 62, 23, 7, moonPhase(date), '#f4f0dc', '#262a52'));
 
+  if (season.fireworks) fireworks(add, date);
+
   // ---- a far skyline, just a silhouette
   for (let x = 0; x < W; x += 6) {
     const h = 10 + Math.floor(hash(x, 7) * 26);
@@ -107,6 +159,7 @@ export function renderCity(calendar, { login = '', date = new Date() } = {}) {
     city.push(rect(x, top, bw, h, body));
     city.push(rect(x, top, 1, h, '#3d3572')); // the lit edge
     city.push(rect(x, top, bw, 1, '#4a4080')); // the roof line
+    if (season.snow) city.push(rect(x, top - 1, bw, 2, '#e8eefc'), rect(x + 1 + Math.floor(hash(i, 51) * 4), top + 1, 2, 1, '#e8eefc')); // snow on the roof, a drip down the edge
     // windows: two columns, a row every three pixels; how many are lit follows the active days
     const lit = w.total ? 0.12 + 0.85 * (w.active / 7) : 0;
     for (let y = top + 3; y < GROUND - 2; y += 3)
@@ -147,6 +200,7 @@ export function renderCity(calendar, { login = '', date = new Date() } = {}) {
   // ---- the street, lamps, and cars going both ways
   add(rect(0, GROUND, W, WATER - GROUND, '#14122c'));
   add(rect(0, GROUND, W, 1, '#3a3270'));
+  if (season.snow) add(rect(0, GROUND - 1, W, 2, '#dfe6f6'));
   for (let x = 12; x < W; x += 44) {
     add(rect(x, GROUND - 5, 1, 5, '#3a3270'));
     add(rect(x - 1, GROUND - 6, 3, 1, '#ffe6a0'));
@@ -162,6 +216,19 @@ export function renderCity(calendar, { login = '', date = new Date() } = {}) {
     const x = Math.floor(hash(i, 21) * W);
     const y = WATER + 2 + Math.floor(hash(i, 22) * (H - WATER - 14));
     add(rect(x, y, 3 + Math.floor(hash(i, 23) * 6), 1, '#5a5aa8', ` class="rp r${i % 3}" opacity=".35"`));
+  }
+
+  // ---- snow, falling in front of everything and drifting with the wind
+  if (season.snow)
+    for (let i = 0; i < 90; i++) {
+      const x = Math.floor(hash(i, 61) * W);
+      const big = hash(i, 62) < 0.25;
+      const dur = (big ? 6 : 9) + hash(i, 63) * 5;
+      add(`<rect class="sn" x="${x}" y="-4" width="${big ? 2 : 1}" height="${big ? 2 : 1}" fill="#ffffff" opacity="${big ? 0.95 : 0.7}" style="animation-duration:${dur.toFixed(2)}s;animation-delay:${(-hash(i, 64) * dur).toFixed(2)}s"/>`);
+    }
+  if (season.fireworks) {
+    const text = `HAPPY NEW YEAR ${newYear(date)}`;
+    add(`<text x="${W / 2}" y="14" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8" font-weight="700" fill="#ffd27a" class="ny">${text}</text>`);
   }
 
   // ---- a caption on the water
@@ -180,7 +247,15 @@ export function renderCity(calendar, { login = '', date = new Date() } = {}) {
     .hook{animation:hook 6s ease-in-out infinite}@keyframes hook{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
     .rp{animation:rp 4s ease-in-out infinite}.r1{animation-delay:-1.3s}.r2{animation-delay:-2.6s}
     @keyframes rp{0%,100%{opacity:.1}50%{opacity:.45}}
-    @media (prefers-reduced-motion:reduce){*{animation:none!important}}`;
+    .sn{animation:sn linear infinite}
+    @keyframes sn{from{transform:translate(0,0)}to{transform:translate(-26px,${H + 8}px)}}
+    .rk,.cr,.sp{opacity:0;animation-iteration-count:infinite;animation-timing-function:ease-out}
+    .rk{animation-name:rk}.cr{animation-name:cr}.sp{animation-name:sp}
+    @keyframes rk{0%{opacity:0;transform:translateY(0)}5%{opacity:1}38%{opacity:1;transform:translateY(var(--up))}40%,100%{opacity:0;transform:translateY(var(--up))}}
+    @keyframes cr{0%,39%{opacity:0}40%{opacity:1}46%,100%{opacity:0}}
+    @keyframes sp{0%,39%{opacity:0;transform:translate(0,0)}41%{opacity:1}75%{opacity:.9}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}
+    .ny{animation:ny 2.4s ease-in-out infinite}@keyframes ny{0%,100%{opacity:1}50%{opacity:.7}}
+    @media (prefers-reduced-motion:reduce){*{animation:none!important}.rk,.cr{opacity:0}.sp{opacity:.8;transform:translate(var(--dx),var(--dy))}.sn{transform:translateY(60px)}}`;
   const dithers = sky
     .slice(1)
     .map((col, i) => `<pattern id="d${i + 1}" width="2" height="2" patternUnits="userSpaceOnUse">${rect(0, 0, 2, 2, sky[i])}${rect(0, 0, 1, 1, col)}${rect(1, 1, 1, 1, col)}</pattern>`)

@@ -35,6 +35,21 @@ test('the same data on the same night gives the same picture', () => {
   assert.equal(renderCity(year(3), { date: night }), renderCity(year(3), { date: night }));
 });
 
+test('the seasons come on by themselves', async () => {
+  const { seasonFor } = await import('../src/render.mjs');
+  assert.deepEqual(seasonFor('auto', new Date(2026, 5, 1)), { snow: false, fireworks: false });
+  assert.deepEqual(seasonFor('auto', new Date(2026, 11, 5)), { snow: true, fireworks: false });
+  assert.deepEqual(seasonFor('auto', new Date(2026, 11, 31)), { snow: true, fireworks: true });
+  assert.deepEqual(seasonFor('auto', new Date(2027, 0, 9)), { snow: true, fireworks: false });
+  assert.deepEqual(seasonFor('night', new Date(2026, 11, 31)), { snow: false, fireworks: false });
+});
+
+test('new year fireworks greet the coming year', () => {
+  assert.match(renderCity(year(1), { theme: 'newyear', date: new Date(2026, 11, 31) }), /HAPPY NEW YEAR 2027/);
+  assert.match(renderCity(year(1), { theme: 'newyear', date: new Date(2027, 0, 2) }), /HAPPY NEW YEAR 2027/);
+  assert.doesNotMatch(renderCity(year(1), { theme: 'night', date: new Date(2026, 11, 31) }), /HAPPY|class="sn"/);
+});
+
 test('escapes the login in the caption', () => {
   const svg = renderCity(year(1), { login: 'a<b>&"c' });
   assert.doesNotMatch(svg, /a<b>/);

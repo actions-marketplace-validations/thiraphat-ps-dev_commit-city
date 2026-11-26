@@ -14,6 +14,9 @@ inputs:
   outputs:
     description: Where to write the SVG, one path per line.
     default: dist/city.svg
+  theme:
+    description: "auto (snow in December, fireworks round New Year), night, snow or newyear"
+    default: auto
 runs:
   using: node24
   main: action/index.mjs

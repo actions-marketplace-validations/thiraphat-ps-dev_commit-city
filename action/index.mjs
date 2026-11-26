@@ -19,6 +19,8 @@ const outputs = input('outputs')
 if (!login) fail('github_user_name is required');
 if (!token) fail('github_token is required (the default ${{ github.token }} is fine)');
 if (!outputs.length) outputs.push('dist/city.svg');
+const theme = input('theme') || 'auto';
+if (!['auto', 'night', 'snow', 'newyear'].includes(theme)) fail(`theme must be auto, night, snow or newyear (got "${theme}")`);
 
 const query = `query($login: String!) {
   user(login: $login) {
@@ -42,7 +44,7 @@ if (json.errors?.length) fail(json.errors.map((e) => e.message).join('; '));
 const calendar = json.data?.user?.contributionsCollection?.contributionCalendar;
 if (!calendar) fail(`No contribution calendar for "${login}"`);
 
-const svg = renderCity(calendar, { login });
+const svg = renderCity(calendar, { login, theme });
 for (const path of outputs) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, svg);
