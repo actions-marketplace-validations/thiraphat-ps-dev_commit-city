@@ -1,0 +1,11 @@
+{
+  "name": "commit-city",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Your year of GitHub contributions as an animated pixel city at night, for your profile README.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "node scripts/build.mjs out/data.json out/city.svg"
+  }
+}
