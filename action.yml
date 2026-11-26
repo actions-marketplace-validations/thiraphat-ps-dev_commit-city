@@ -1,0 +1,19 @@
+name: commit-city
+description: Turn your year of GitHub contributions into an animated pixel city at night, for your profile README.
+author: thiraphat-ps-dev
+branding:
+  icon: moon
+  color: purple
+inputs:
+  github_user_name:
+    description: Whose contributions to build the city from.
+    required: true
+  github_token:
+    description: Token for the GitHub GraphQL API. The workflow's own token is enough for public contributions.
+    default: ${{ github.token }}
+  outputs:
+    description: Where to write the SVG, one path per line.
+    default: dist/city.svg
+runs:
+  using: node24
+  main: action/index.mjs

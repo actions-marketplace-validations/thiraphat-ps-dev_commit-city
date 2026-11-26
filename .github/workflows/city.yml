@@ -1,0 +1,30 @@
+# Builds this repo's own demo city (from the owner's contributions) every day, using the action
+# from this very commit, and puts it on the `output` branch for the README to show.
+name: city
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+concurrency:
+  group: city
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: dist/city.svg
+      - name: Put it on the output branch
+        run: |
+          cd dist
+          git init -q -b output
+          git add city.svg
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -qm 'Build the city'
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" output

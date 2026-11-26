@@ -17,6 +17,7 @@ const hash = (...n) => {
   const v = Math.sin(n.reduce((a, b, i) => a + b * (12.9898 + i * 78.233), 0)) * 43758.5453;
   return v - Math.floor(v);
 };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const rect = (x, y, w, h, fill, extra = '') => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"${extra}/>`;
 
 /** Where the moon is in its month at `date`, 0..1 (0 new, 0.5 full). */
@@ -164,7 +165,7 @@ export function renderCity(calendar, { login = '', date = new Date() } = {}) {
   }
 
   // ---- a caption on the water
-  const caption = `${login ? '@' + login + ' · ' : ''}${calendar.totalContributions.toLocaleString('en-US')} contributions in the last year`;
+  const caption = esc(`${login ? '@' + login + ' · ' : ''}${calendar.totalContributions.toLocaleString('en-US')} contributions in the last year`);
   add(`<text x="${W - 6}" y="${H - 5}" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="6" fill="#cfd8ff" opacity=".75">${caption}</text>`);
 
   const style = `
